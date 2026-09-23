@@ -1,8 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
 
+from .decorators import staff_required
 from .forms import PatientRegistrationForm
+from .models import Appointment, AppointmentSlot, Doctor
 
 
 def home(request):
@@ -24,3 +27,16 @@ def register(request):
         form = PatientRegistrationForm()
 
     return render(request, "clinic/register.html", {"form": form})
+
+
+# ---------- Admin dashboard (staff only) ----------
+
+@staff_required
+def dashboard(request):
+    context = {
+        "doctor_count": Doctor.objects.count(),
+        "slot_count": AppointmentSlot.objects.count(),
+        "appointment_count": Appointment.objects.filter(status=Appointment.STATUS_CONFIRMED).count(),
+        "patient_count": User.objects.filter(is_staff=False).count(),
+    }
+    return render(request, "clinic/dashboard/home.html", context)

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% extends "clinic/base.html" %}
+
+{% block title %}Admin Dashboard | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Admin Dashboard</h1>
+    <p>Manage doctors, appointment slots, bookings and patient accounts.</p>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <div class="stat">{{ doctor_count }}</div>
+        <div>Doctors</div>
+    </div>
+    <div class="card">
+        <div class="stat">{{ slot_count }}</div>
+        <div>Appointment slots</div>
+    </div>
+    <div class="card">
+        <div class="stat">{{ appointment_count }}</div>
+        <div>Confirmed appointments</div>
+    </div>
+    <div class="card">
+        <div class="stat">{{ patient_count }}</div>
+        <div>Patients</div>
+    </div>
+</div>
+{% endblock %}
+</body>
+</html>

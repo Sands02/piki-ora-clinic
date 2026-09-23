@@ -19,6 +19,8 @@
         .message.error { background: #fdecea; }
         label { display: block; margin-top: 12px; font-weight: bold; }
         input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px; }
+        .stat { font-size: 2rem; font-weight: bold; color: #1f6f78; }
     </style>
 </head>
 <body>
@@ -26,6 +28,9 @@
         <a class="brand" href="{% url 'home' %}">Piki Ora Medical Centre</a>
         <nav>
             {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                {% endif %}
                 <span>Hello, {{ user.username }}</span>
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
