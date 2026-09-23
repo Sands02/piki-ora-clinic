@@ -1,0 +1,33 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Register | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 480px; margin: 0 auto;">
+    <h1>Create an account</h1>
+    <p>Register as a patient to book appointments online.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+                <small style="color: #666;">{{ field.help_text|safe }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+                <div class="message error">{{ error }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% for error in form.non_field_errors %}
+            <div class="message error">{{ error }}</div>
+        {% endfor %}
+
+        <p><button type="submit" class="btn">Register</button></p>
+    </form>
+
+    <p>Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+</div>
+{% endblock %}
