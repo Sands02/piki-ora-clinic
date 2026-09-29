@@ -1,0 +1,75 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}My appointments | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="page-head">
+        <h1>My appointments</h1>
+        <a href="{% url 'doctors' %}" class="btn">+ Book new</a>
+    </div>
+
+    <h2>Upcoming</h2>
+    {% if upcoming %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Doctor</th>
+                        <th>Reason</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in upcoming %}
+                        <tr>
+                            <td>{{ appointment.slot.date|date:"D j M Y" }}</td>
+                            <td>{{ appointment.slot.start_time|time:"g:i A" }}</td>
+                            <td>Dr. {{ appointment.slot.doctor.full_name }}</td>
+                            <td>{{ appointment.reason|default:"-" }}</td>
+                            <td class="actions">
+                                <a href="{% url 'edit_appointment' appointment.pk %}" class="btn btn-small">Change</a>
+                                <a href="{% url 'cancel_appointment' appointment.pk %}" class="btn btn-small btn-danger">Cancel</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">You have no upcoming appointments.</p>
+    {% endif %}
+</div>
+
+<div class="card mt">
+    <h2>Past and cancelled</h2>
+    {% if history %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Doctor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in history %}
+                        <tr>
+                            <td>{{ appointment.slot.date|date:"D j M Y" }}</td>
+                            <td>{{ appointment.slot.start_time|time:"g:i A" }}</td>
+                            <td>Dr. {{ appointment.slot.doctor.full_name }}</td>
+                            <td>{% if appointment.status == "cancelled" %}Cancelled{% else %}Completed{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">No past or cancelled appointments.</p>
+    {% endif %}
+</div>
+{% endblock %}

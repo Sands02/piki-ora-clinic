@@ -1,12 +1,19 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.models import User
-from django.db.models import Exists, OuterRef
+from django.db import IntegrityError, transaction
+from django.db.models import Exists, OuterRef, Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .decorators import staff_required
-from .forms import AppointmentSlotForm, DoctorForm, PatientRegistrationForm
+from .decorators import patient_required, staff_required
+from .forms import (
+    AppointmentEditForm,
+    AppointmentSlotForm,
+    BookingForm,
+    DoctorForm,
+    PatientRegistrationForm,
+)
 from .models import Appointment, AppointmentSlot, Doctor
 
 
@@ -31,6 +38,100 @@ def register(request):
     return render(request, "clinic/register.html", {"form": form})
 
 
+# ---------- Patient pages ----------
+
+def doctors(request):
+    doctor_list = (
+        Doctor.objects.filter(is_active=True)
+        .order_by("full_name")
+        .prefetch_related(
+            Prefetch("slots", queryset=AppointmentSlot.available(), to_attr="open_slots")
+        )
+    )
+    return render(request, "clinic/doctors.html", {"doctors": doctor_list})
+
+
+@patient_required
+def book_appointment(request, slot_id):
+    slot = AppointmentSlot.available().filter(pk=slot_id).first()
+    if slot is None:
+        messages.error(request, "Sorry, that appointment time is no longer available.")
+        return redirect("doctors")
+
+    if request.method == "POST":
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            appointment = form.save(commit=False)
+            appointment.patient = request.user
+            appointment.slot = slot
+            try:
+                with transaction.atomic():
+                    appointment.save()
+            except IntegrityError:
+                messages.error(request, "Sorry, someone has just booked that time. Please choose another.")
+                return redirect("doctors")
+            messages.success(request, f"Your appointment is confirmed: {slot}.")
+            return redirect("my_appointments")
+    else:
+        form = BookingForm()
+
+    return render(request, "clinic/book_appointment.html", {"form": form, "slot": slot})
+
+
+@patient_required
+def my_appointments(request):
+    appointments = list(
+        request.user.appointments.select_related("slot__doctor").order_by("slot__date", "slot__start_time")
+    )
+    upcoming = [a for a in appointments if a.is_upcoming]
+    history = [a for a in reversed(appointments) if not a.is_upcoming]
+    return render(request, "clinic/my_appointments.html", {"upcoming": upcoming, "history": history})
+
+
+@patient_required
+def edit_appointment(request, pk):
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("slot__doctor"), pk=pk, patient=request.user
+    )
+    if not appointment.is_upcoming:
+        messages.error(request, "This appointment can no longer be changed.")
+        return redirect("my_appointments")
+
+    if request.method == "POST":
+        form = AppointmentEditForm(request.POST, instance=appointment)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    form.save()
+            except IntegrityError:
+                messages.error(request, "Sorry, someone has just booked that time. Please choose another.")
+                return redirect("edit_appointment", pk=pk)
+            messages.success(request, f"Your appointment has been updated: {appointment.slot}.")
+            return redirect("my_appointments")
+    else:
+        form = AppointmentEditForm(instance=appointment)
+
+    return render(request, "clinic/appointment_form.html", {"form": form, "appointment": appointment})
+
+
+@patient_required
+def cancel_appointment(request, pk):
+    appointment = get_object_or_404(
+        Appointment.objects.select_related("slot__doctor"), pk=pk, patient=request.user
+    )
+    if not appointment.is_upcoming:
+        messages.error(request, "This appointment can no longer be cancelled.")
+        return redirect("my_appointments")
+
+    if request.method == "POST":
+        appointment.status = Appointment.STATUS_CANCELLED
+        appointment.save(update_fields=["status"])
+        messages.success(request, f"Your appointment has been cancelled: {appointment.slot}.")
+        return redirect("my_appointments")
+
+    return render(request, "clinic/appointment_confirm_cancel.html", {"appointment": appointment})
+
+
 # ---------- Admin dashboard (staff only) ----------
 
 @staff_required
@@ -48,8 +149,8 @@ def dashboard(request):
 
 @staff_required
 def doctor_list(request):
-    doctors = Doctor.objects.order_by("full_name")
-    return render(request, "clinic/dashboard/doctor_list.html", {"doctors": doctors})
+    doctors_qs = Doctor.objects.order_by("full_name")
+    return render(request, "clinic/dashboard/doctor_list.html", {"doctors": doctors_qs})
 
 
 @staff_required

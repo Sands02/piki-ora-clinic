@@ -32,15 +32,20 @@
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e3e3e3; }
         th { background: #f0f5f6; }
         .actions { white-space: nowrap; }
+        .muted { color: #666; }
+        .mt { margin-top: 20px; }
     </style>
 </head>
 <body>
     <header>
         <a class="brand" href="{% url 'home' %}">Piki Ora Medical Centre</a>
         <nav>
+            <a href="{% url 'doctors' %}">Doctors</a>
             {% if user.is_authenticated %}
                 {% if user.is_staff %}
                     <a href="{% url 'dashboard' %}">Dashboard</a>
+                {% else %}
+                    <a href="{% url 'my_appointments' %}">My appointments</a>
                 {% endif %}
                 <span>Hello, {{ user.username }}</span>
                 <form method="post" action="{% url 'logout' %}">

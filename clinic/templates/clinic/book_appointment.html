@@ -1,0 +1,34 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Book appointment | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'doctors' %}">&larr; Back to doctors</a></p>
+
+<div class="card" style="max-width: 560px; margin: 0 auto;">
+    <h1>Confirm your booking</h1>
+
+    <table>
+        <tr><th>Doctor</th><td>Dr. {{ slot.doctor.full_name }} ({{ slot.doctor.specialty }})</td></tr>
+        <tr><th>Date</th><td>{{ slot.date|date:"l j F Y" }}</td></tr>
+        <tr><th>Time</th><td>{{ slot.start_time|time:"g:i A" }} &ndash; {{ slot.end_time|time:"g:i A" }}</td></tr>
+    </table>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+                <div class="message error">{{ error }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <p>
+            <button type="submit" class="btn">Confirm booking</button>
+            <a href="{% url 'doctors' %}" class="btn btn-grey">Cancel</a>
+        </p>
+    </form>
+</div>
+{% endblock %}

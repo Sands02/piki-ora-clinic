@@ -4,5 +4,19 @@
 <div class="card">
     <h1>Welcome to Piki Ora Medical Centre</h1>
     <p>Book and manage your doctor's appointments online.</p>
+
+    <p>
+        {% if user.is_authenticated %}
+            {% if user.is_staff %}
+                <a href="{% url 'dashboard' %}" class="btn">Go to admin dashboard</a>
+            {% else %}
+                <a href="{% url 'doctors' %}" class="btn">Book an appointment</a>
+                <a href="{% url 'my_appointments' %}" class="btn btn-grey">My appointments</a>
+            {% endif %}
+        {% else %}
+            <a href="{% url 'doctors' %}" class="btn">View doctors</a>
+            <a href="{% url 'register' %}" class="btn btn-grey">Register to book</a>
+        {% endif %}
+    </p>
 </div>
 {% endblock %}

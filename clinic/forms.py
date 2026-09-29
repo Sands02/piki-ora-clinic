@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import AppointmentSlot, Doctor
+from .models import Appointment, AppointmentSlot, Doctor
 
 
 class PatientRegistrationForm(UserCreationForm):
@@ -76,3 +76,30 @@ class AppointmentSlotForm(forms.ModelForm):
                 raise forms.ValidationError("This doctor already has a slot that overlaps with this time.")
 
         return cleaned_data
+
+
+class BookingForm(forms.ModelForm):
+    class Meta:
+        model = Appointment
+        fields = ["reason"]
+        labels = {"reason": "Reason for visit (optional)"}
+        widgets = {"reason": forms.Textarea(attrs={"rows": 3})}
+
+
+class AppointmentEditForm(forms.ModelForm):
+    class Meta:
+        model = Appointment
+        fields = ["slot", "reason"]
+        labels = {"slot": "Appointment time", "reason": "Reason for visit (optional)"}
+        widgets = {"reason": forms.Textarea(attrs={"rows": 3})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Offer every available slot, plus the one this appointment already has.
+        available_ids = AppointmentSlot.available().values("pk")
+        self.fields["slot"].queryset = (
+            AppointmentSlot.objects.filter(Q(pk__in=available_ids) | Q(pk=self.instance.slot_id))
+            .select_related("doctor")
+            .order_by("date", "start_time")
+        )
+        self.fields["slot"].empty_label = None

@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Doctor(models.Model):
@@ -18,7 +19,22 @@ class AppointmentSlot(models.Model):
     end_time = models.TimeField()
 
     def __str__(self):
-        return f"{self.doctor.full_name}: {self.date} {self.start_time}-{self.end_time}"
+        return f"Dr. {self.doctor.full_name}, {self.date:%a %d %b %Y}, {self.start_time:%I:%M %p}"
+
+    @classmethod
+    def available(cls):
+        """Future slots of active doctors that do not have a confirmed appointment."""
+        now = timezone.localtime()
+        booked = Appointment.objects.filter(
+            slot=models.OuterRef("pk"), status=Appointment.STATUS_CONFIRMED
+        )
+        return (
+            cls.objects.filter(doctor__is_active=True)
+            .filter(models.Q(date__gt=now.date()) | models.Q(date=now.date(), start_time__gt=now.time()))
+            .filter(~models.Exists(booked))
+            .select_related("doctor")
+            .order_by("date", "start_time")
+        )
 
 
 class Appointment(models.Model):
@@ -50,3 +66,12 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.patient.username} with {self.slot} ({self.status})"
+
+    @property
+    def is_upcoming(self):
+        """True if the appointment is confirmed and has not started yet."""
+        now = timezone.localtime()
+        slot = self.slot
+        return self.status == self.STATUS_CONFIRMED and (
+            slot.date > now.date() or (slot.date == now.date() and slot.start_time > now.time())
+        )

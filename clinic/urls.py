@@ -6,6 +6,13 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("register/", views.register, name="register"),
 
+    # Patient pages
+    path("doctors/", views.doctors, name="doctors"),
+    path("book/<int:slot_id>/", views.book_appointment, name="book_appointment"),
+    path("my-appointments/", views.my_appointments, name="my_appointments"),
+    path("my-appointments/<int:pk>/edit/", views.edit_appointment, name="edit_appointment"),
+    path("my-appointments/<int:pk>/cancel/", views.cancel_appointment, name="cancel_appointment"),
+
     # Admin dashboard
     path("dashboard/", views.dashboard, name="dashboard"),
 
