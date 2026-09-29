@@ -2,16 +2,18 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
-from django.db.models import Exists, OuterRef, Prefetch
+from django.db.models import Count, Exists, OuterRef, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .decorators import patient_required, staff_required
 from .forms import (
+    AdminAppointmentForm,
     AppointmentEditForm,
     AppointmentSlotForm,
     BookingForm,
     DoctorForm,
+    PatientAccountForm,
     PatientRegistrationForm,
 )
 from .models import Appointment, AppointmentSlot, Doctor
@@ -252,3 +254,113 @@ def slot_delete(request, pk):
         return redirect("slot_list")
 
     return render(request, "clinic/dashboard/slot_confirm_delete.html", {"slot": slot})
+
+
+# ---------- Dashboard: all appointments ----------
+
+@staff_required
+def appointment_list(request):
+    status = request.GET.get("status", Appointment.STATUS_CONFIRMED)
+    appointments = Appointment.objects.select_related("patient", "slot__doctor").order_by(
+        "slot__date", "slot__start_time"
+    )
+    if status in (Appointment.STATUS_CONFIRMED, Appointment.STATUS_CANCELLED):
+        appointments = appointments.filter(status=status)
+    else:
+        status = "all"
+
+    return render(
+        request, "clinic/dashboard/appointment_list.html", {"appointments": appointments, "status": status}
+    )
+
+
+@staff_required
+def admin_appointment_edit(request, pk):
+    appointment = get_object_or_404(Appointment.objects.select_related("patient", "slot__doctor"), pk=pk)
+
+    if request.method == "POST":
+        form = AdminAppointmentForm(request.POST, instance=appointment)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    form.save()
+            except IntegrityError:
+                form.add_error("slot", "That time is already booked by another patient.")
+            else:
+                messages.success(request, "The appointment has been updated.")
+                return redirect("appointment_list")
+    else:
+        form = AdminAppointmentForm(instance=appointment)
+
+    return render(request, "clinic/dashboard/appointment_form.html", {"form": form, "appointment": appointment})
+
+
+@staff_required
+def admin_appointment_cancel(request, pk):
+    appointment = get_object_or_404(Appointment.objects.select_related("patient", "slot__doctor"), pk=pk)
+
+    if appointment.status == Appointment.STATUS_CANCELLED:
+        messages.error(request, "This appointment is already cancelled.")
+        return redirect("appointment_list")
+
+    if request.method == "POST":
+        appointment.status = Appointment.STATUS_CANCELLED
+        appointment.save(update_fields=["status"])
+        messages.success(request, "The appointment has been cancelled.")
+        return redirect("appointment_list")
+
+    return render(request, "clinic/dashboard/appointment_confirm_cancel.html", {"appointment": appointment})
+
+
+# ---------- Dashboard: patient accounts ----------
+
+@staff_required
+def patient_list(request):
+    patients = (
+        User.objects.filter(is_staff=False)
+        .annotate(
+            upcoming_count=Count(
+                "appointments",
+                filter=Q(
+                    appointments__status=Appointment.STATUS_CONFIRMED,
+                    appointments__slot__date__gte=timezone.localdate(),
+                ),
+            )
+        )
+        .order_by("last_name", "first_name", "username")
+    )
+    return render(request, "clinic/dashboard/patient_list.html", {"patients": patients})
+
+
+@staff_required
+def patient_edit(request, pk):
+    patient = get_object_or_404(User, pk=pk, is_staff=False)
+
+    if request.method == "POST":
+        form = PatientAccountForm(request.POST, instance=patient)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Patient account '{patient.username}' has been updated.")
+            return redirect("patient_list")
+    else:
+        form = PatientAccountForm(instance=patient)
+
+    appointments = patient.appointments.select_related("slot__doctor").order_by("-slot__date", "-slot__start_time")
+    return render(
+        request,
+        "clinic/dashboard/patient_form.html",
+        {"form": form, "patient": patient, "appointments": appointments},
+    )
+
+
+@staff_required
+def patient_delete(request, pk):
+    patient = get_object_or_404(User, pk=pk, is_staff=False)
+
+    if request.method == "POST":
+        username = patient.username
+        patient.delete()
+        messages.success(request, f"Patient account '{username}' has been deleted.")
+        return redirect("patient_list")
+
+    return render(request, "clinic/dashboard/patient_confirm_delete.html", {"patient": patient})

@@ -1,0 +1,57 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Our Doctors | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Our doctors</h1>
+    <p>Choose an available time to book an appointment.</p>
+    {% if not user.is_authenticated %}
+        <p class="muted">You will be asked to log in or register before booking.</p>
+    {% endif %}
+</div>
+
+{% for doctor in doctors %}
+    <div class="card mt">
+        <h2>Dr. {{ doctor.full_name }}</h2>
+        <p><strong>{{ doctor.specialty }}</strong></p>
+        {% if doctor.bio %}
+            <p>{{ doctor.bio }}</p>
+        {% endif %}
+
+        <h3>Available times</h3>
+        {% if doctor.open_slots %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in doctor.open_slots %}
+                            <tr>
+                                <td>{{ slot.date|date:"D j M Y" }}</td>
+                                <td>{{ slot.start_time|time:"g:i A" }} &ndash; {{ slot.end_time|time:"g:i A" }}</td>
+                                <td class="actions">
+                                    {% if not user.is_staff %}
+                                        <a href="{% url 'book_appointment' slot.pk %}" class="btn btn-small">Book</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="muted">No available times at the moment.</p>
+        {% endif %}
+    </div>
+{% empty %}
+    <div class="card mt">
+        <p>No doctors are available right now.</p>
+    </div>
+{% endfor %}
+{% endblock %}

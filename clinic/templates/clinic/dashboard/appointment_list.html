@@ -1,0 +1,58 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}All Appointments | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+
+<div class="card">
+    <h1>All appointments</h1>
+
+    <p>
+        <a href="?status=confirmed" class="btn btn-small {% if status != 'confirmed' %}btn-grey{% endif %}">Confirmed</a>
+        <a href="?status=cancelled" class="btn btn-small {% if status != 'cancelled' %}btn-grey{% endif %}">Cancelled</a>
+        <a href="?status=all" class="btn btn-small {% if status != 'all' %}btn-grey{% endif %}">All</a>
+    </p>
+
+    {% if appointments %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Doctor</th>
+                        <th>Patient</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in appointments %}
+                        <tr>
+                            <td>{{ appointment.slot.date|date:"D j M Y" }}</td>
+                            <td>{{ appointment.slot.start_time|time:"g:i A" }}</td>
+                            <td>Dr. {{ appointment.slot.doctor.full_name }}</td>
+                            <td>
+                                {{ appointment.patient.get_full_name|default:appointment.patient.username }}<br>
+                                <small class="muted">{{ appointment.patient.username }}</small>
+                            </td>
+                            <td>{{ appointment.reason|default:"-" }}</td>
+                            <td>{{ appointment.get_status_display }}</td>
+                            <td class="actions">
+                                <a href="{% url 'admin_appointment_edit' appointment.pk %}" class="btn btn-small">Edit</a>
+                                {% if appointment.status == "confirmed" %}
+                                    <a href="{% url 'admin_appointment_cancel' appointment.pk %}" class="btn btn-small btn-danger">Cancel</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">No appointments to show.</p>
+    {% endif %}
+</div>
+{% endblock %}

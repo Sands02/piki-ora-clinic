@@ -87,6 +87,8 @@ class BookingForm(forms.ModelForm):
 
 
 class AppointmentEditForm(forms.ModelForm):
+    """Used by patients to move their own appointment to another free time."""
+
     class Meta:
         model = Appointment
         fields = ["slot", "reason"]
@@ -103,3 +105,52 @@ class AppointmentEditForm(forms.ModelForm):
             .order_by("date", "start_time")
         )
         self.fields["slot"].empty_label = None
+
+
+class AdminAppointmentForm(forms.ModelForm):
+    """Used by staff to change the time, status or reason of any appointment."""
+
+    class Meta:
+        model = Appointment
+        fields = ["slot", "status", "reason"]
+        labels = {"slot": "Appointment time", "reason": "Reason for visit"}
+        widgets = {"reason": forms.Textarea(attrs={"rows": 3})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        available_ids = AppointmentSlot.available().values("pk")
+        self.fields["slot"].queryset = (
+            AppointmentSlot.objects.filter(Q(pk__in=available_ids) | Q(pk=self.instance.slot_id))
+            .select_related("doctor")
+            .order_by("date", "start_time")
+        )
+        self.fields["slot"].empty_label = None
+
+    def clean(self):
+        cleaned_data = super().clean()
+        slot = cleaned_data.get("slot")
+        status = cleaned_data.get("status")
+
+        if slot and status == Appointment.STATUS_CONFIRMED:
+            clash = Appointment.objects.filter(
+                slot=slot, status=Appointment.STATUS_CONFIRMED
+            ).exclude(pk=self.instance.pk)
+            if clash.exists():
+                self.add_error("slot", "That time is already booked by another patient.")
+
+        return cleaned_data
+
+
+class PatientAccountForm(forms.ModelForm):
+    """Used by staff to update a patient's details or block their account."""
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "is_active"]
+        labels = {"is_active": "Account active (untick to stop this patient logging in)"}
+
+    def clean_email(self):
+        email = self.cleaned_data["email"]
+        if email and User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Another account already uses this email.")
+        return email

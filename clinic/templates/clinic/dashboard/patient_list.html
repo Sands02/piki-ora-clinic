@@ -1,0 +1,47 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Patients | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+
+<div class="card">
+    <h1>Patients</h1>
+
+    {% if patients %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Joined</th>
+                        <th>Upcoming</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                        <tr>
+                            <td>{{ patient.username }}</td>
+                            <td>{{ patient.get_full_name|default:"-" }}</td>
+                            <td>{{ patient.email|default:"-" }}</td>
+                            <td>{{ patient.date_joined|date:"j M Y" }}</td>
+                            <td>{{ patient.upcoming_count }}</td>
+                            <td>{% if patient.is_active %}Active{% else %}Blocked{% endif %}</td>
+                            <td class="actions">
+                                <a href="{% url 'patient_edit' patient.pk %}" class="btn btn-small">Manage</a>
+                                <a href="{% url 'patient_delete' patient.pk %}" class="btn btn-small btn-danger">Delete</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="muted">No patients have registered yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
