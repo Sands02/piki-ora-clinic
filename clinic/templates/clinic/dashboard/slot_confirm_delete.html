@@ -1,0 +1,24 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Delete appointment slot | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 560px; margin: 0 auto;">
+    <h1>Delete appointment slot</h1>
+    <p>
+        Are you sure you want to delete this slot?<br>
+        <strong>Dr. {{ slot.doctor.full_name }}</strong>,
+        {{ slot.date|date:"D j M Y" }},
+        {{ slot.start_time|time:"g:i A" }} &ndash; {{ slot.end_time|time:"g:i A" }}
+    </p>
+    <div class="message error">
+        Any appointment booked in this slot will also be deleted. This cannot be undone.
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, delete</button>
+        <a href="{% url 'slot_list' %}" class="btn btn-grey">Cancel</a>
+    </form>
+</div>
+{% endblock %}

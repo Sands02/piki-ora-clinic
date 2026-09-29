@@ -6,6 +6,7 @@
     <title>{% block title %}Piki Ora Medical Centre{% endblock %}</title>
     <style>
         body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f4f7f9; color: #222; }
+        a { color: #1f6f78; }
         header { background: #1f6f78; color: #fff; padding: 14px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
         header a { color: #fff; text-decoration: none; }
         .brand { font-size: 1.3rem; font-weight: bold; }
@@ -15,12 +16,22 @@
         .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .btn { background: #1f6f78; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 1rem; text-decoration: none; display: inline-block; }
         .btn-light { background: #fff; color: #1f6f78; }
+        .btn-small { padding: 6px 12px; font-size: 0.9rem; }
+        .btn-danger { background: #c0392b; }
+        .btn-grey { background: #888; }
         .message { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; background: #e0f2f1; }
         .message.error { background: #fdecea; }
         label { display: block; margin-top: 12px; font-weight: bold; }
         input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        input[type="checkbox"] { width: auto; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px; }
         .stat { font-size: 2rem; font-weight: bold; color: #1f6f78; }
+        .page-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e3e3e3; }
+        th { background: #f0f5f6; }
+        .actions { white-space: nowrap; }
     </style>
 </head>
 <body>

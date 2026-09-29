@@ -1,0 +1,44 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Manage Doctors | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+
+<div class="card">
+    <div class="page-head">
+        <h1>Doctors</h1>
+        <a href="{% url 'doctor_create' %}" class="btn">+ Add doctor</a>
+    </div>
+
+    {% if doctors %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Specialty</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doctor in doctors %}
+                        <tr>
+                            <td>Dr. {{ doctor.full_name }}</td>
+                            <td>{{ doctor.specialty }}</td>
+                            <td>{% if doctor.is_active %}Active{% else %}Inactive{% endif %}</td>
+                            <td class="actions">
+                                <a href="{% url 'doctor_edit' doctor.pk %}" class="btn btn-small">Edit</a>
+                                <a href="{% url 'doctor_delete' doctor.pk %}" class="btn btn-small btn-danger">Delete</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No doctors yet. Click "Add doctor" to create the first one.</p>
+    {% endif %}
+</div>
+{% endblock %}

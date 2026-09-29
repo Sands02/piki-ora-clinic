@@ -1,0 +1,47 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Manage Appointment Slots | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'dashboard' %}">&larr; Back to dashboard</a></p>
+
+<div class="card">
+    <div class="page-head">
+        <h1>Appointment slots</h1>
+        <a href="{% url 'slot_create' %}" class="btn">+ Add slot</a>
+    </div>
+    <p>Showing today's and upcoming slots.</p>
+
+    {% if slots %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Doctor</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slot in slots %}
+                        <tr>
+                            <td>{{ slot.date|date:"D j M Y" }}</td>
+                            <td>{{ slot.start_time|time:"g:i A" }} &ndash; {{ slot.end_time|time:"g:i A" }}</td>
+                            <td>Dr. {{ slot.doctor.full_name }}</td>
+                            <td>{% if slot.is_booked %}Booked{% else %}Available{% endif %}</td>
+                            <td class="actions">
+                                <a href="{% url 'slot_edit' slot.pk %}" class="btn btn-small">Edit</a>
+                                <a href="{% url 'slot_delete' slot.pk %}" class="btn btn-small btn-danger">Delete</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No upcoming slots. Click "Add slot" to create one.</p>
+    {% endif %}
+</div>
+{% endblock %}

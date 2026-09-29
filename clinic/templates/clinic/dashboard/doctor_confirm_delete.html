@@ -1,0 +1,19 @@
+{% extends "clinic/base.html" %}
+
+{% block title %}Delete doctor | Piki Ora Medical Centre{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 560px; margin: 0 auto;">
+    <h1>Delete doctor</h1>
+    <p>Are you sure you want to delete <strong>Dr. {{ doctor.full_name }}</strong>?</p>
+    <div class="message error">
+        This will also delete all of this doctor's appointment slots and any appointments booked in them. This cannot be undone.
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, delete</button>
+        <a href="{% url 'doctor_list' %}" class="btn btn-grey">Cancel</a>
+    </form>
+</div>
+{% endblock %}
