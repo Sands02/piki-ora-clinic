@@ -1,4 +1,4 @@
-
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
 from rest_framework import (
@@ -9,7 +9,7 @@ from rest_framework import (
 )
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.views import APIView
 
 from .models import Doctor, AppointmentSlot, Appointment
@@ -17,8 +17,12 @@ from .serializers import (
     DoctorSerializer,
     AppointmentSlotSerializer,
     AppointmentSerializer,
+    PatientSerializer,
     RegisterSerializer,
 )
+
+
+User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
@@ -53,7 +57,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
-        doctors = Doctor.objects.all()
+        doctors = Doctor.objects.order_by('full_name')
 
         if not self.request.user.is_staff:
             doctors = doctors.filter(is_active=True)
@@ -67,7 +71,7 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_staff:
-            return AppointmentSlot.objects.select_related('doctor').all()
+            return AppointmentSlot.objects.select_related('doctor').order_by('date', 'start_time')
 
         return AppointmentSlot.available()
 
@@ -76,17 +80,24 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    # No DELETE: appointments are cancelled (kept as history), never removed.
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
+
     def get_queryset(self):
         appointments = Appointment.objects.select_related(
             'patient', 'slot', 'slot__doctor'
-        )
+        ).order_by('slot__date', 'slot__start_time')
 
         if self.request.user.is_staff:
-            return appointments.all()
+            return appointments
 
         return appointments.filter(patient=self.request.user)
 
     def perform_create(self, serializer):
+        # Same rule as the website: only patients book appointments.
+        if self.request.user.is_staff:
+            raise PermissionDenied('Staff accounts cannot book appointments.')
+
         slot = serializer.validated_data['slot']
 
         if not AppointmentSlot.available().filter(pk=slot.pk).exists():
@@ -103,7 +114,12 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             })
 
     def perform_update(self, serializer):
-        appointment = self.get_object()
+        appointment = serializer.instance
+
+        # Patients can only change their own upcoming, confirmed appointments.
+        if not self.request.user.is_staff and not appointment.is_upcoming:
+            raise ValidationError('This appointment can no longer be changed.')
+
         new_slot = serializer.validated_data.get('slot', appointment.slot)
 
         if new_slot != appointment.slot:
@@ -126,7 +142,14 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
         if appointment.status == Appointment.STATUS_CANCELLED:
             return Response(
-                {'message': 'Appointment is already cancelled.'},
+                {'detail': 'Appointment is already cancelled.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Patients can only cancel appointments that have not started yet.
+        if not request.user.is_staff and not appointment.is_upcoming:
+            return Response(
+                {'detail': 'This appointment can no longer be cancelled.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -134,6 +157,19 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         appointment.save(update_fields=['status'])
 
         return Response(
-            {'message': 'Appointment cancelled successfully.'},
+            {'detail': 'Appointment cancelled successfully.'},
             status=status.HTTP_200_OK
         )
+
+
+class PatientViewSet(viewsets.ModelViewSet):
+    """Staff only: view, update, block or delete patient accounts."""
+
+    serializer_class = PatientSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    # Patients create their own accounts through /api/register/, so no POST here.
+    http_method_names = ['get', 'put', 'patch', 'delete', 'head', 'options']
+
+    def get_queryset(self):
+        return User.objects.filter(is_staff=False).order_by('last_name', 'first_name', 'username')

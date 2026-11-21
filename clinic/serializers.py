@@ -133,6 +133,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'reason',
             'created_at',
         ]
+        # The database constraint still blocks double booking; the views give a clear message instead.
+        validators = []
         read_only_fields = [
             'id',
             'patient',
