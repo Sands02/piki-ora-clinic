@@ -1,3 +1,4 @@
+
 {% extends "clinic/base.html" %}
 
 {% block title %}Manage Doctors | Piki Ora Medical Centre{% endblock %}
@@ -25,9 +26,15 @@
                 <tbody>
                     {% for doctor in doctors %}
                         <tr>
-                            <td>Dr. {{ doctor.full_name }}</td>
+                            <td>{{ doctor.full_name }}</td>
                             <td>{{ doctor.specialty }}</td>
-                            <td>{% if doctor.is_active %}Active{% else %}Inactive{% endif %}</td>
+                            <td>
+                                {% if doctor.is_active %}
+                                    Active
+                                {% else %}
+                                    Inactive
+                                {% endif %}
+                            </td>
                             <td class="actions">
                                 <a href="{% url 'doctor_edit' doctor.pk %}" class="btn btn-small">Edit</a>
                                 <a href="{% url 'doctor_delete' doctor.pk %}" class="btn btn-small btn-danger">Delete</a>

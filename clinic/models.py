@@ -1,5 +1,10 @@
+import re
+
 from django.db import models
 from django.utils import timezone
+
+# Matches a leading "Dr", "Dr." or "Dr. Dr. " typed before a name, but not names like "Drew".
+DR_PREFIX = re.compile(r"^(?:dr(?:\.\s*|\s+))+", re.IGNORECASE)
 
 
 class Doctor(models.Model):
@@ -7,6 +12,11 @@ class Doctor(models.Model):
     specialty = models.CharField(max_length=150)
     bio = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        # The site adds "Dr." itself when showing a name, so store the name without it.
+        self.full_name = DR_PREFIX.sub("", self.full_name.strip())
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Dr. {self.full_name} ({self.specialty})"
