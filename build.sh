@@ -3,6 +3,11 @@
 set -o errexit
 
 pip install -r requirements.txt
+
+# Gather static files (CSS/JS for the site and Django's own pages) so WhiteNoise can serve them
+python manage.py collectstatic --noinput
+
+# Create or update the database tables
 python manage.py migrate
 
 # Create the admin account from Render environment variables (skipped if it already exists)
