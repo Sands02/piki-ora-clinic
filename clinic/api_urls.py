@@ -1,8 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .api_views import (
-    RegisterView,
+from .api_views import RegisterView
+from .viewsets import (
     DoctorViewSet,
     AppointmentSlotViewSet,
     AppointmentViewSet,
